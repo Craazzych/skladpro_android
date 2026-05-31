@@ -22,7 +22,6 @@ class AuthViewModel(
             startRequest()
             runCatching { repository.login(login, password) }
                 .onSuccess { employee ->
-                    AppContainer.session.start(employee.id)
                     _uiState.value = AuthUiState()
                     onSuccess(employee)
                 }

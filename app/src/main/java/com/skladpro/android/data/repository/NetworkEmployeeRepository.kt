@@ -1,6 +1,5 @@
 package com.skladpro.android.data.repository
 
-import com.skladpro.android.data.AppSession
 import com.skladpro.android.data.remote.CreateEmployeeRequest
 import com.skladpro.android.data.remote.SkladProApi
 import com.skladpro.android.data.remote.toDomain
@@ -9,8 +8,7 @@ import com.skladpro.android.domain.model.UserRole
 import com.skladpro.android.domain.repository.EmployeeRepository
 
 class NetworkEmployeeRepository(
-    private val api: SkladProApi,
-    private val session: AppSession
+    private val api: SkladProApi
 ) : EmployeeRepository {
     override suspend fun getEmployees(): List<EmployeeProfile> =
         api.getEmployees().map { it.toDomain() }
@@ -28,8 +26,6 @@ class NetworkEmployeeRepository(
     ).toDomain()
 
     override suspend fun deleteEmployee(employeeId: String) {
-        val actorId = session.currentEmployeeId
-            ?: error("Не удалось определить текущего пользователя")
-        api.deleteEmployee(employeeId, actorId)
+        api.deleteEmployee(employeeId)
     }
 }

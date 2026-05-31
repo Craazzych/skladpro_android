@@ -4,11 +4,16 @@ class AppSession {
     var currentEmployeeId: String? = null
         private set
 
-    fun start(employeeId: String) {
+    var token: String? = null
+        private set
+
+    fun start(employeeId: String, token: String) {
         currentEmployeeId = employeeId
+        this.token = token
     }
 
     fun clear() {
         currentEmployeeId = null
+        token = null
     }
 }

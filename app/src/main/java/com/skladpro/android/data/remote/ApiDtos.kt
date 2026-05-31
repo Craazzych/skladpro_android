@@ -63,7 +63,10 @@ data class CreateEmployeeRequest(
 data class LoginRequest(val login: String, val password: String)
 
 @Serializable
-data class LoginResponse(val employee: EmployeeDto)
+data class LoginResponse(
+    val employee: EmployeeDto,
+    val token: String
+)
 
 @Serializable
 data class ActivateEmployeeRequest(

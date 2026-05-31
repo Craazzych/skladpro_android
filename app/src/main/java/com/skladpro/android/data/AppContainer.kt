@@ -6,10 +6,10 @@ import com.skladpro.android.data.repository.NetworkEmployeeRepository
 import com.skladpro.android.data.repository.NetworkInventoryRepository
 
 object AppContainer {
-    private val api = SkladProApi()
     val session = AppSession()
+    private val api = SkladProApi(session)
 
-    val authRepository = NetworkAuthRepository(api)
-    val employeeRepository = NetworkEmployeeRepository(api, session)
+    val authRepository = NetworkAuthRepository(api, session)
+    val employeeRepository = NetworkEmployeeRepository(api)
     val inventoryRepository = NetworkInventoryRepository(api)
 }
