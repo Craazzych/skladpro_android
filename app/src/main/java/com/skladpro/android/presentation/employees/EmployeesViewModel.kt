@@ -1,69 +1,67 @@
 package com.skladpro.android.presentation.employees
 
 import androidx.lifecycle.ViewModel
-import com.skladpro.android.domain.model.EmployeeProfile
-import com.skladpro.android.domain.model.EmployeeStatus
+import androidx.lifecycle.viewModelScope
+import com.skladpro.android.data.AppContainer
 import com.skladpro.android.domain.model.UserRole
+import com.skladpro.android.domain.repository.EmployeeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.util.UUID
+import kotlinx.coroutines.launch
 
-class EmployeesViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(
-        EmployeesUiState(
-            employees = listOf(
-                EmployeeProfile(
-                    id = "employee-1",
-                    fullName = "Иванов Сергей Петрович",
-                    login = "s.ivanov",
-                    role = UserRole.Worker,
-                    status = EmployeeStatus.Active
-                ),
-                EmployeeProfile(
-                    id = "employee-2",
-                    fullName = "Орлова Мария Андреевна",
-                    login = "m.orlova",
-                    role = UserRole.Worker,
-                    status = EmployeeStatus.PendingActivation,
-                    temporaryPassword = "TMP-654321"
-                )
-            )
-        )
-    )
+class EmployeesViewModel(
+    private val repository: EmployeeRepository = AppContainer.employeeRepository
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(EmployeesUiState(isLoading = true))
     val uiState: StateFlow<EmployeesUiState> = _uiState.asStateFlow()
+
+    init {
+        refresh()
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            runCatching { repository.getEmployees() }
+                .onSuccess { employees ->
+                    _uiState.value = EmployeesUiState(employees = employees)
+                }
+                .onFailure(::showError)
+        }
+    }
 
     fun createEmployee(
         fullName: String,
         login: String,
-        role: UserRole
+        role: UserRole,
+        onSuccess: () -> Unit
     ) {
-        val password = generateTemporaryPassword()
-        val employee = EmployeeProfile(
-            id = UUID.randomUUID().toString(),
-            fullName = fullName.trim(),
-            login = login.trim(),
-            role = role,
-            status = EmployeeStatus.PendingActivation,
-            temporaryPassword = password
-        )
-        _uiState.update {
-            it.copy(
-                employees = listOf(employee).plus(it.employees)
-            )
+        viewModelScope.launch {
+            runCatching { repository.createEmployee(fullName, login, role) }
+                .onSuccess {
+                    refresh()
+                    onSuccess()
+                }
+                .onFailure(::showError)
         }
     }
 
     fun deleteEmployee(employeeId: String) {
-        _uiState.update {
-            it.copy(
-                employees = it.employees.filterNot { employee -> employee.id == employeeId }
-            )
+        viewModelScope.launch {
+            runCatching { repository.deleteEmployee(employeeId) }
+                .onSuccess { refresh() }
+                .onFailure(::showError)
         }
     }
 
-    private fun generateTemporaryPassword(): String {
-        return "TMP-${(100000..999999).random()}"
+    private fun showError(error: Throwable) {
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = error.message ?: "Не удалось выполнить запрос"
+            )
+        }
     }
 }

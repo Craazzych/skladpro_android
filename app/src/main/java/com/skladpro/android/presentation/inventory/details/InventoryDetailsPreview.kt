@@ -2,12 +2,12 @@ package com.skladpro.android.presentation.inventory.details
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.skladpro.android.data.repository.FakeInventoryRepository
+import com.skladpro.android.data.repository.DemoInventoryData
 import com.skladpro.android.domain.model.UserRole
 import com.skladpro.android.ui.theme.SkladProTheme
 
-private val previewItem = FakeInventoryRepository().getItems().first()
-private val lowStockPreviewItem = FakeInventoryRepository().getItems()[1]
+private val previewItem = DemoInventoryData.items.first()
+private val lowStockPreviewItem = DemoInventoryData.items[1]
 
 @Preview(
     name = "Карточка запаса",

@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,9 +36,12 @@ fun EmployeesScreen(
     state: EmployeesUiState,
     onBack: () -> Unit,
     onAddEmployee: () -> Unit,
-    onDeleteEmployee: (employeeId: String) -> Unit
+    onDeleteEmployee: (employeeId: String) -> Unit,
+    onRetry: () -> Unit,
+    currentEmployeeId: String?
 ) {
     var employeeToDelete by remember { mutableStateOf<EmployeeProfile?>(null) }
+    val adminCount = state.employees.count { it.role == UserRole.Admin }
 
     Scaffold { innerPadding ->
         Column(
@@ -70,6 +74,15 @@ fun EmployeesScreen(
                 }
             }
 
+            if (state.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+            state.errorMessage?.let { message ->
+                Text(text = message, color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = onRetry) {
+                    Text("Повторить")
+                }
+            }
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 24.dp),
@@ -81,6 +94,11 @@ fun EmployeesScreen(
                 ) { employee ->
                     EmployeeCard(
                         employee = employee,
+                        deletionUnavailableReason = deletionUnavailableReason(
+                            employee = employee,
+                            currentEmployeeId = currentEmployeeId,
+                            adminCount = adminCount
+                        ),
                         onDelete = { employeeToDelete = employee }
                     )
                 }
@@ -155,7 +173,22 @@ private fun EmployeesScreenPreview() {
             ),
             onBack = {},
             onAddEmployee = {},
-            onDeleteEmployee = {}
+            onDeleteEmployee = {},
+            onRetry = {},
+            currentEmployeeId = "1"
         )
+    }
+}
+
+private fun deletionUnavailableReason(
+    employee: EmployeeProfile,
+    currentEmployeeId: String?,
+    adminCount: Int
+): String? {
+    return when {
+        employee.id == currentEmployeeId -> "Нельзя удалить собственный профиль"
+        employee.role == UserRole.Admin && adminCount <= 1 ->
+            "Нельзя удалить последнего администратора"
+        else -> null
     }
 }

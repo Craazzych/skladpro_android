@@ -26,7 +26,9 @@ import com.skladpro.android.ui.theme.SkladProTheme
 @Composable
 fun PasswordSetupScreen(
     onBackToActivation: () -> Unit,
-    onPasswordSaved: () -> Unit
+    onPasswordSaved: (newPassword: String) -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
     var password by rememberSaveable { mutableStateOf("") }
     var repeatPassword by rememberSaveable { mutableStateOf("") }
@@ -66,9 +68,12 @@ fun PasswordSetupScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(4.dp))
+            errorMessage?.let {
+                Text(text = it, color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+            }
             Button(
-                onClick = onPasswordSaved,
-                enabled = canSave,
+                onClick = { onPasswordSaved(password) },
+                enabled = canSave && !isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Сохранить пароль")

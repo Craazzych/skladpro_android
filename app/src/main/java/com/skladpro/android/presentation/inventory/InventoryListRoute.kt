@@ -14,6 +14,7 @@ fun InventoryListRoute(
     onDarkThemeChange: (Boolean) -> Unit,
     onOpenEmployees: () -> Unit,
     onAddItem: () -> Unit,
+    onLogout: () -> Unit,
     onOpenDetails: (itemId: String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -26,6 +27,7 @@ fun InventoryListRoute(
         onDarkThemeChange = onDarkThemeChange,
         onOpenEmployees = onOpenEmployees,
         onAddItem = onAddItem,
+        onLogout = onLogout,
         onOpenDetails = onOpenDetails
     )
 }

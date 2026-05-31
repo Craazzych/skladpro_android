@@ -27,11 +27,11 @@ import com.skladpro.android.ui.theme.SkladProTheme
 @Composable
 fun LoginScreen(
     onOpenActivation: () -> Unit,
-    onDemoWorkerLogin: () -> Unit,
-    onDemoAdminLogin: () -> Unit,
-    onLogin: (email: String, password: String) -> Unit
+    onLogin: (login: String, password: String) -> Unit,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
-    var email by rememberSaveable { mutableStateOf("") }
+    var login by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
     AuthScreenFrame(
@@ -43,11 +43,10 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Логин или email") },
+                value = login,
+                onValueChange = { login = it },
+                label = { Text("Логин") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
@@ -60,24 +59,15 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(4.dp))
+            errorMessage?.let {
+                Text(text = it, color = MaterialTheme.colorScheme.error)
+            }
             Button(
-                onClick = { onLogin(email.trim(), password) },
-                enabled = email.isNotBlank() && password.isNotBlank(),
+                onClick = { onLogin(login.trim(), password) },
+                enabled = login.isNotBlank() && password.isNotBlank() && !isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Войти")
-            }
-            TextButton(
-                onClick = onDemoWorkerLogin,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Демо: работник")
-            }
-            TextButton(
-                onClick = onDemoAdminLogin,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Демо: администратор")
             }
             TextButton(
                 onClick = onOpenActivation,
@@ -103,8 +93,6 @@ private fun LoginScreenPreview() {
     SkladProTheme {
         LoginScreen(
             onOpenActivation = {},
-            onDemoWorkerLogin = {},
-            onDemoAdminLogin = {},
             onLogin = { _, _ -> }
         )
     }

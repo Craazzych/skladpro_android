@@ -8,5 +8,4 @@ sealed interface InventoryAction {
     data object RetryClicked : InventoryAction
     data object ClearHistoryClicked : InventoryAction
     data class ItemClicked(val item: InventoryItem) : InventoryAction
-    data object SimulateErrorClicked : InventoryAction
 }

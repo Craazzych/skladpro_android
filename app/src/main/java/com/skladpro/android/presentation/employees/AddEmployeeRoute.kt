@@ -11,8 +11,7 @@ fun AddEmployeeRoute(
     AddEmployeeScreen(
         onBack = onBack,
         onSave = { fullName, login, role ->
-            viewModel.createEmployee(fullName, login, role)
-            onSaved()
+            viewModel.createEmployee(fullName, login, role, onSuccess = onSaved)
         }
     )
 }

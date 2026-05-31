@@ -30,8 +30,7 @@ fun InventoryDetailsRoute(
         },
         onEdit = onEdit,
         onDelete = {
-            viewModel.deleteItem(itemId)
-            onDeleted()
+            viewModel.deleteItem(itemId, onSuccess = onDeleted)
         }
     )
 }

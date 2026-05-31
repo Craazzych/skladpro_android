@@ -25,6 +25,7 @@ import com.skladpro.android.domain.model.EmployeeStatus
 @Composable
 fun EmployeeCard(
     employee: EmployeeProfile,
+    deletionUnavailableReason: String?,
     onDelete: () -> Unit
 ) {
     val clipboardManager = LocalClipboardManager.current
@@ -87,9 +88,17 @@ fun EmployeeCard(
 
             TextButton(
                 onClick = onDelete,
+                enabled = deletionUnavailableReason == null,
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text("Удалить профиль")
+            }
+            deletionUnavailableReason?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }

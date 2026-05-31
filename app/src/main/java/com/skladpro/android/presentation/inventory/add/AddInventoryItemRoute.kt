@@ -15,8 +15,7 @@ fun AddInventoryItemRoute(
         actionLabel = "Добавить товар",
         onBack = onBack,
         onSave = { draft ->
-            viewModel.addItem(draft.toInventoryItem())
-            onSaved()
+            viewModel.addItem(draft.toInventoryItem(), onSuccess = onSaved)
         }
     )
 }
@@ -38,9 +37,13 @@ fun EditInventoryItemRoute(
         onBack = onBack,
         onSave = { draft ->
             if (item != null) {
-                viewModel.updateItem(draft.toInventoryItem(id = item.id))
+                viewModel.updateItem(
+                    item = draft.toInventoryItem(id = item.id),
+                    onSuccess = onSaved
+                )
+            } else {
+                onSaved()
             }
-            onSaved()
         }
     )
 }

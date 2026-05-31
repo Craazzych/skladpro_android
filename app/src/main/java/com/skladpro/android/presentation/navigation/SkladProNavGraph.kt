@@ -1,6 +1,7 @@
 package com.skladpro.android.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -13,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.skladpro.android.domain.model.UserRole
 import com.skladpro.android.presentation.auth.ActivationScreen
+import com.skladpro.android.presentation.auth.AuthViewModel
 import com.skladpro.android.presentation.auth.LoginScreen
 import com.skladpro.android.presentation.auth.PasswordSetupScreen
 import com.skladpro.android.presentation.employees.AddEmployeeRoute
@@ -32,7 +34,10 @@ fun SkladProNavGraph(
     val navController = rememberNavController()
     val inventoryViewModel: InventoryViewModel = viewModel()
     val employeesViewModel: EmployeesViewModel = viewModel()
+    val authViewModel: AuthViewModel = viewModel()
+    val authState by authViewModel.uiState.collectAsState()
     var currentRole by rememberSaveable { mutableStateOf(UserRole.Worker) }
+    var currentEmployeeId by rememberSaveable { mutableStateOf<String?>(null) }
 
     NavHost(
         navController = navController,
@@ -43,30 +48,19 @@ fun SkladProNavGraph(
                 onOpenActivation = {
                     navController.navigate(AppRoute.Activation.path)
                 },
-                onDemoWorkerLogin = {
-                    currentRole = UserRole.Worker
-                    navController.navigate(AppRoute.InventoryList.path) {
-                        popUpTo(AppRoute.Login.path) {
-                            inclusive = true
+                onLogin = { login, password ->
+                    authViewModel.login(login, password) { employee ->
+                        currentRole = employee.role
+                        currentEmployeeId = employee.id
+                        navController.navigate(AppRoute.InventoryList.path) {
+                            popUpTo(AppRoute.Login.path) {
+                                inclusive = true
+                            }
                         }
                     }
                 },
-                onDemoAdminLogin = {
-                    currentRole = UserRole.Admin
-                    navController.navigate(AppRoute.InventoryList.path) {
-                        popUpTo(AppRoute.Login.path) {
-                            inclusive = true
-                        }
-                    }
-                },
-                onLogin = { _, _ ->
-                    currentRole = UserRole.Worker
-                    navController.navigate(AppRoute.InventoryList.path) {
-                        popUpTo(AppRoute.Login.path) {
-                            inclusive = true
-                        }
-                    }
-                }
+                isLoading = authState.isLoading,
+                errorMessage = authState.errorMessage
             )
         }
 
@@ -75,9 +69,11 @@ fun SkladProNavGraph(
                 onBackToLogin = {
                     navController.popBackStack()
                 },
-                onActivate = { _, _, _ ->
+                onActivate = { login, temporaryPassword ->
+                    authViewModel.prepareActivation(login, temporaryPassword)
                     navController.navigate(AppRoute.PasswordSetup.path)
-                }
+                },
+                errorMessage = authState.errorMessage
             )
         }
 
@@ -86,13 +82,17 @@ fun SkladProNavGraph(
                 onBackToActivation = {
                     navController.popBackStack()
                 },
-                onPasswordSaved = {
-                    navController.navigate(AppRoute.Login.path) {
-                        popUpTo(AppRoute.Login.path) {
-                            inclusive = false
+                onPasswordSaved = { newPassword ->
+                    authViewModel.activate(newPassword) {
+                        navController.navigate(AppRoute.Login.path) {
+                            popUpTo(AppRoute.Login.path) {
+                                inclusive = false
+                            }
                         }
                     }
-                }
+                },
+                isLoading = authState.isLoading,
+                errorMessage = authState.errorMessage
             )
         }
 
@@ -108,6 +108,16 @@ fun SkladProNavGraph(
                 onAddItem = {
                     navController.navigate(AppRoute.AddInventoryItem.path)
                 },
+                onLogout = {
+                    authViewModel.logout()
+                    currentRole = UserRole.Worker
+                    currentEmployeeId = null
+                    navController.navigate(AppRoute.Login.path) {
+                        popUpTo(AppRoute.InventoryList.path) {
+                            inclusive = true
+                        }
+                    }
+                },
                 onOpenDetails = { itemId ->
                     navController.navigate(AppRoute.InventoryDetails.createPath(itemId))
                 }
@@ -117,6 +127,7 @@ fun SkladProNavGraph(
         composable(AppRoute.Employees.path) {
             EmployeesRoute(
                 viewModel = employeesViewModel,
+                currentEmployeeId = currentEmployeeId,
                 onBack = {
                     navController.popBackStack()
                 },

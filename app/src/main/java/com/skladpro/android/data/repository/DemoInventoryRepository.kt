@@ -3,8 +3,50 @@ package com.skladpro.android.data.repository
 import com.skladpro.android.domain.model.InventoryItem
 import com.skladpro.android.domain.repository.InventoryRepository
 
-class FakeInventoryRepository : InventoryRepository {
-    private val items = listOf(
+class DemoInventoryRepository : InventoryRepository {
+    private var items = DemoInventoryData.items
+
+    override suspend fun getItems(): List<InventoryItem> = items
+
+    override suspend fun createItem(item: InventoryItem): InventoryItem {
+        items = listOf(item).plus(items)
+        return item
+    }
+
+    override suspend fun updateItem(item: InventoryItem): InventoryItem {
+        items = items.map { current -> if (current.id == item.id) item else current }
+        return item
+    }
+
+    override suspend fun deleteItem(itemId: String) {
+        items = items.filterNot { it.id == itemId }
+    }
+
+    override suspend fun applyStockOperation(
+        itemId: String,
+        quantityDelta: Double
+    ): InventoryItem {
+        val item = items.first { it.id == itemId }
+        return updateItem(item.copy(quantity = item.quantity + quantityDelta))
+    }
+
+    override suspend fun updateDelivery(
+        itemId: String,
+        expectedDeliveryDate: String?,
+        expectedDeliveryQuantity: Double?
+    ): InventoryItem {
+        val item = items.first { it.id == itemId }
+        return updateItem(
+            item.copy(
+                expectedDeliveryDate = expectedDeliveryDate,
+                expectedDeliveryQuantity = expectedDeliveryQuantity
+            )
+        )
+    }
+}
+
+object DemoInventoryData {
+    val items = listOf(
         InventoryItem(
             id = "1",
             name = "Стальные болты М8",
@@ -71,18 +113,4 @@ class FakeInventoryRepository : InventoryRepository {
         )
     )
 
-    override fun getItems(): List<InventoryItem> = items
-
-    override fun searchItems(query: String): List<InventoryItem> {
-        val cleanQuery = query.trim()
-        return if (cleanQuery.isBlank()) {
-            items
-        } else {
-            items.filter { item ->
-                item.name.contains(cleanQuery, ignoreCase = true) ||
-                    item.sku.contains(cleanQuery, ignoreCase = true) ||
-                    item.category.contains(cleanQuery, ignoreCase = true)
-            }
-        }
-    }
 }

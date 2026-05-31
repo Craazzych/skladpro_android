@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,6 +51,7 @@ fun InventoryDetailsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             TextButton(onClick = onBack) {
@@ -251,6 +254,7 @@ private fun RoleActions(
             ) {
                 Text("Удалить товар")
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     } else {
         OutlinedButton(
@@ -270,7 +274,7 @@ private fun DeleteItemDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Удалить товар?") },
-        text = { Text("Позиция исчезнет из списка запасов mock-приложения.") },
+        text = { Text("Позиция исчезнет из списка запасов.") },
         confirmButton = {
             Button(onClick = onConfirm) {
                 Text("Удалить")

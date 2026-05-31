@@ -2,11 +2,11 @@ package com.skladpro.android.presentation.inventory
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.skladpro.android.data.repository.FakeInventoryRepository
+import com.skladpro.android.data.repository.DemoInventoryData
 import com.skladpro.android.domain.model.UserRole
 import com.skladpro.android.ui.theme.SkladProTheme
 
-private val previewItems = FakeInventoryRepository().getItems()
+private val previewItems = DemoInventoryData.items
 
 @Preview(
     name = "Главный экран запасов",
@@ -28,6 +28,7 @@ private fun InventoryListScreenPreview() {
             onDarkThemeChange = {},
             onOpenEmployees = {},
             onAddItem = {},
+            onLogout = {},
             onOpenDetails = {}
         )
     }
@@ -53,6 +54,7 @@ private fun InventoryListEmptyPreview() {
             onDarkThemeChange = {},
             onOpenEmployees = {},
             onAddItem = {},
+            onLogout = {},
             onOpenDetails = {}
         )
     }
@@ -75,6 +77,7 @@ private fun InventoryListErrorPreview() {
             onDarkThemeChange = {},
             onOpenEmployees = {},
             onAddItem = {},
+            onLogout = {},
             onOpenDetails = {}
         )
     }

@@ -29,6 +29,7 @@ fun InventoryListScreen(
     onDarkThemeChange: (Boolean) -> Unit,
     onOpenEmployees: () -> Unit,
     onAddItem: () -> Unit,
+    onLogout: () -> Unit,
     onOpenDetails: (itemId: String) -> Unit
 ) {
     Scaffold { innerPadding ->
@@ -42,7 +43,8 @@ fun InventoryListScreen(
             Spacer(modifier = Modifier.height(12.dp))
             ThemeSwitchRow(
                 darkTheme = darkTheme,
-                onDarkThemeChange = onDarkThemeChange
+                onDarkThemeChange = onDarkThemeChange,
+                onLogout = onLogout
             )
             if (role == UserRole.Admin) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -68,12 +70,6 @@ fun InventoryListScreen(
                 onHistoryClick = { onAction(InventoryAction.ItemClicked(it)) }
             )
             Spacer(modifier = Modifier.height(12.dp))
-            TextButton(
-                onClick = { onAction(InventoryAction.SimulateErrorClicked) },
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text("Показать ошибку")
-            }
             InventoryContent(
                 state = state,
                 onRetry = { onAction(InventoryAction.RetryClicked) },
@@ -103,7 +99,8 @@ private fun InventoryHeader(role: UserRole) {
 @Composable
 private fun ThemeSwitchRow(
     darkTheme: Boolean,
-    onDarkThemeChange: (Boolean) -> Unit
+    onDarkThemeChange: (Boolean) -> Unit,
+    onLogout: () -> Unit
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -118,5 +115,8 @@ private fun ThemeSwitchRow(
             checked = darkTheme,
             onCheckedChange = onDarkThemeChange
         )
+        TextButton(onClick = onLogout) {
+            Text("Выйти")
+        }
     }
 }

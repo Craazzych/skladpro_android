@@ -16,7 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,19 +26,13 @@ import com.skladpro.android.ui.theme.SkladProTheme
 @Composable
 fun ActivationScreen(
     onBackToLogin: () -> Unit,
-    onActivate: (
-        fullName: String,
-        email: String,
-        temporaryPassword: String
-    ) -> Unit
+    onActivate: (login: String, temporaryPassword: String) -> Unit,
+    errorMessage: String? = null
 ) {
-    var fullName by rememberSaveable { mutableStateOf("") }
-    var email by rememberSaveable { mutableStateOf("") }
+    var login by rememberSaveable { mutableStateOf("") }
     var temporaryPassword by rememberSaveable { mutableStateOf("") }
 
-    val canActivate = fullName.isNotBlank() &&
-        email.isNotBlank() &&
-        temporaryPassword.isNotBlank()
+    val canActivate = login.isNotBlank() && temporaryPassword.isNotBlank()
 
     AuthScreenFrame(
         title = "Активация",
@@ -50,21 +43,10 @@ fun ActivationScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
-                label = { Text("ФИО") },
+                value = login,
+                onValueChange = { login = it },
+                label = { Text("Логин") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Логин или email") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
@@ -77,13 +59,12 @@ fun ActivationScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(4.dp))
+            errorMessage?.let {
+                Text(text = it, color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+            }
             Button(
                 onClick = {
-                    onActivate(
-                        fullName.trim(),
-                        email.trim(),
-                        temporaryPassword
-                    )
+                    onActivate(login.trim(), temporaryPassword)
                 },
                 enabled = canActivate,
                 modifier = Modifier.fillMaxWidth()
@@ -111,7 +92,7 @@ private fun ActivationScreenPreview() {
     SkladProTheme {
         ActivationScreen(
             onBackToLogin = {},
-            onActivate = { _, _, _ -> }
+            onActivate = { _, _ -> }
         )
     }
 }

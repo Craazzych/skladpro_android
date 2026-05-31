@@ -1,33 +1,36 @@
 package com.skladpro.android.presentation.inventory
 
 import androidx.lifecycle.ViewModel
-import com.skladpro.android.data.repository.FakeInventoryRepository
+import androidx.lifecycle.viewModelScope
+import com.skladpro.android.data.AppContainer
 import com.skladpro.android.domain.model.InventoryItem
 import com.skladpro.android.domain.repository.InventoryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class InventoryViewModel(
-    private val repository: InventoryRepository = FakeInventoryRepository()
+    private val repository: InventoryRepository = AppContainer.inventoryRepository
 ) : ViewModel() {
     private val historyIds = mutableListOf<String>()
-    private var allItems = repository.getItems()
+    private var allItems = emptyList<InventoryItem>()
 
-    private val _uiState = MutableStateFlow(
-        InventoryUiState(items = allItems)
-    )
+    private val _uiState = MutableStateFlow(InventoryUiState(isLoading = true))
     val uiState: StateFlow<InventoryUiState> = _uiState.asStateFlow()
+
+    init {
+        refresh()
+    }
 
     fun onAction(action: InventoryAction) {
         when (action) {
             is InventoryAction.QueryChanged -> updateQuery(action.query)
             InventoryAction.ClearQueryClicked -> updateQuery("")
-            InventoryAction.RetryClicked -> updateQuery(_uiState.value.query)
+            InventoryAction.RetryClicked -> refresh()
             InventoryAction.ClearHistoryClicked -> clearHistory()
             is InventoryAction.ItemClicked -> addToHistory(action.item)
-            InventoryAction.SimulateErrorClicked -> showError()
         }
     }
 
@@ -36,47 +39,30 @@ class InventoryViewModel(
     }
 
     fun applyStockOperation(itemId: String, quantityDelta: Double) {
-        if (quantityDelta == 0.0) return
-
-        allItems = allItems.map { item ->
-            if (item.id == itemId) {
-                val updatedQuantity = (item.quantity + quantityDelta).coerceAtLeast(0.0)
-                item.copy(quantity = updatedQuantity)
-            } else {
-                item
-            }
-        }
-        updateQuery(_uiState.value.query)
-        _uiState.update {
-            it.copy(searchHistory = historyItems())
+        runRequest {
+            replaceItem(repository.applyStockOperation(itemId, quantityDelta))
         }
     }
 
-    fun addItem(item: InventoryItem) {
-        allItems = listOf(item).plus(allItems)
-        updateQuery(_uiState.value.query)
-    }
-
-    fun updateItem(updatedItem: InventoryItem) {
-        allItems = allItems.map { item ->
-            if (item.id == updatedItem.id) {
-                updatedItem
-            } else {
-                item
-            }
-        }
-        updateQuery(_uiState.value.query)
-        _uiState.update {
-            it.copy(searchHistory = historyItems())
+    fun addItem(item: InventoryItem, onSuccess: () -> Unit) {
+        runRequest(onSuccess) {
+            allItems = listOf(repository.createItem(item)).plus(allItems)
+            updateVisibleItems()
         }
     }
 
-    fun deleteItem(itemId: String) {
-        allItems = allItems.filterNot { it.id == itemId }
-        historyIds.remove(itemId)
-        updateQuery(_uiState.value.query)
-        _uiState.update {
-            it.copy(searchHistory = historyItems())
+    fun updateItem(item: InventoryItem, onSuccess: () -> Unit) {
+        runRequest(onSuccess) {
+            replaceItem(repository.updateItem(item))
+        }
+    }
+
+    fun deleteItem(itemId: String, onSuccess: () -> Unit) {
+        runRequest(onSuccess) {
+            repository.deleteItem(itemId)
+            allItems = allItems.filterNot { it.id == itemId }
+            historyIds.remove(itemId)
+            updateVisibleItems()
         }
     }
 
@@ -85,27 +71,63 @@ class InventoryViewModel(
         expectedDeliveryDate: String?,
         expectedDeliveryQuantity: Double?
     ) {
-        allItems = allItems.map { item ->
-            if (item.id == itemId) {
-                item.copy(
+        runRequest {
+            replaceItem(
+                repository.updateDelivery(
+                    itemId = itemId,
                     expectedDeliveryDate = expectedDeliveryDate,
                     expectedDeliveryQuantity = expectedDeliveryQuantity
                 )
-            } else {
-                item
-            }
-        }
-        updateQuery(_uiState.value.query)
-        _uiState.update {
-            it.copy(searchHistory = historyItems())
+            )
         }
     }
 
+    private fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, isError = false) }
+            runCatching { repository.getItems() }
+                .onSuccess { items ->
+                    allItems = items
+                    updateVisibleItems()
+                }
+                .onFailure {
+                    _uiState.update { state ->
+                        state.copy(isLoading = false, isError = true)
+                    }
+                }
+        }
+    }
+
+    private fun runRequest(
+        onSuccess: () -> Unit = {},
+        request: suspend () -> Unit
+    ) {
+        viewModelScope.launch {
+            runCatching { request() }
+                .onSuccess { onSuccess() }
+                .onFailure {
+                    _uiState.update { state -> state.copy(isError = true) }
+                }
+        }
+    }
+
+    private fun replaceItem(updatedItem: InventoryItem) {
+        allItems = allItems.map { item ->
+            if (item.id == updatedItem.id) updatedItem else item
+        }
+        updateVisibleItems()
+    }
+
     private fun updateQuery(query: String) {
+        _uiState.update { it.copy(query = query) }
+        updateVisibleItems()
+    }
+
+    private fun updateVisibleItems() {
         _uiState.update {
             it.copy(
-                query = query,
-                items = searchItems(query),
+                items = searchItems(it.query),
+                searchHistory = historyItems(),
                 isLoading = false,
                 isError = false
             )
@@ -115,35 +137,17 @@ class InventoryViewModel(
     private fun addToHistory(item: InventoryItem) {
         historyIds.remove(item.id)
         historyIds.add(0, item.id)
-        if (historyIds.size > 10) {
-            historyIds.removeLast()
-        }
-        _uiState.update {
-            it.copy(searchHistory = historyItems())
-        }
+        if (historyIds.size > 10) historyIds.removeLast()
+        _uiState.update { it.copy(searchHistory = historyItems()) }
     }
 
     private fun clearHistory() {
         historyIds.clear()
-        _uiState.update {
-            it.copy(searchHistory = emptyList())
-        }
-    }
-
-    private fun showError() {
-        _uiState.update {
-            it.copy(
-                items = emptyList(),
-                isLoading = false,
-                isError = true
-            )
-        }
+        _uiState.update { it.copy(searchHistory = emptyList()) }
     }
 
     private fun historyItems(): List<InventoryItem> {
-        return historyIds.mapNotNull { id ->
-            allItems.firstOrNull { it.id == id }
-        }
+        return historyIds.mapNotNull { id -> allItems.firstOrNull { it.id == id } }
     }
 
     private fun searchItems(query: String): List<InventoryItem> {

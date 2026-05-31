@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 @Composable
 fun EmployeesRoute(
     viewModel: EmployeesViewModel,
+    currentEmployeeId: String?,
     onBack: () -> Unit,
     onAddEmployee: () -> Unit
 ) {
@@ -16,6 +17,8 @@ fun EmployeesRoute(
         state = state,
         onBack = onBack,
         onAddEmployee = onAddEmployee,
-        onDeleteEmployee = viewModel::deleteEmployee
+        onDeleteEmployee = viewModel::deleteEmployee,
+        onRetry = viewModel::refresh,
+        currentEmployeeId = currentEmployeeId
     )
 }
